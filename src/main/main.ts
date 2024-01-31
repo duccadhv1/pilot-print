@@ -10,11 +10,24 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
-import log from 'electron-log';
-import { autoUpdater } from 'electron-updater';
 import path from 'path';
+import { print } from 'unix-print';
+import { Request, Response } from 'express';
+import { v4 as uuidv4 } from 'uuid';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+
+const { exec } = require('child_process');
+
+function execute(command: string, callback?: Function) {
+  exec(command, (error: any, stdout: any) => {
+    if (callback) callback(stdout);
+  });
+}
+
+interface PrintRequest extends Request {
+  file: Buffer;
+}
 
 const os = require('os');
 
@@ -34,14 +47,6 @@ expressApp.use(bodyParser.json({ extended: true }));
 const multer = require('multer');
 
 const upload = multer();
-
-class AppUpdater {
-  constructor() {
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
-  }
-}
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -139,36 +144,37 @@ const createWindow = async () => {
     });
 
     expressApp.post(
-      '/upload',
+      '/print/:printer',
       upload.single('file'),
-      async (req: any, res: any) => {
-        const printOpts = [
-          '-o portrait',
-          // '-o fit-to-page',
-          '-o media=Custom.58x40mm',
-          '-o page-top=50',
-        ];
+      async (req: PrintRequest, res: Response) => {
+        const options = req?.body?.options;
+        const { printer } = req.params;
+        const fileName = uuidv4();
 
-        const tmpFilePath = `/tmp/printPdf1.pdf`;
+        const tmpFilePath = `/tmp/otter-files/${fileName}.pdf`;
 
         fs.writeFileSync(tmpFilePath, req.file.buffer, {
           encoding: 'binary',
         });
 
         // eslint-disable-next-line promise/catch-or-return
-        // print(tmpFilePath, req?.body?.printer || 'Xprinter_XP_480B', printOpts)
-        //   .then(() => {
-        //     console.log('print success');
-        //   })
-        //   .catch((err) => {
-        //     return res.sendStatus(500).send({ error: 'Something failed!' });
-        //   });
+        print(tmpFilePath, printer, options)
+          .then(() => {
+            // TODO: cleanup file after print succeed
+            console.log('print success');
+          })
+          .catch((err) => {
+            return res.sendStatus(500).send({ error: 'Something failed!' });
+          });
         return res.send(200);
       },
     );
 
     expressApp.listen(PORT, () => {
+      // run command if needed
+      execute('cd /tmp && mkdir otter-files');
       console.log('Listening on 3000');
+      // execute('lp /tmp/custom_58x40.pdf');
     });
   });
 
@@ -187,7 +193,7 @@ const createWindow = async () => {
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
-  new AppUpdater();
+  // new AppUpdater();
 };
 
 /**
@@ -223,11 +229,6 @@ if (!gotTheLock) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
     }
-
-    dialog.showErrorBox(
-      'Welcome Back',
-      `You arrived from: ${commandLine.pop().slice(0, -1)}`,
-    );
   });
 
   // Create mainWindow, load the rest of the app, etc...
