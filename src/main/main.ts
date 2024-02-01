@@ -9,7 +9,14 @@
  * When running `npm run build` or `npm run build:main`, this file is compiled to
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
-import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
+import {
+  BrowserWindow,
+  app,
+  dialog,
+  ipcMain,
+  shell,
+  nativeImage,
+} from 'electron';
 import path from 'path';
 import { print } from 'unix-print';
 import { Request, Response } from 'express';
@@ -114,6 +121,9 @@ const createWindow = async () => {
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
   });
+
+  const image = nativeImage.createFromPath(getAssetPath('icon.png'));
+  app.dock.setIcon(image);
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 
