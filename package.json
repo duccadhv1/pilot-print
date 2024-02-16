@@ -147,8 +147,8 @@
     "webpack-merge": "^5.9.0"
   },
   "build": {
-    "productName": "OtterSgPrintProxy",
-    "appId": "org.erb.OtterSgPrintProxy",
+    "productName": "OtterSGPrintProxy",
+    "appId": "org.erb.OtterSGPrintProxy",
     "asar": true,
     "asarUnpack": "**\\*.{node,dll}",
     "files": [

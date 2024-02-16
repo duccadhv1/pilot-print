@@ -9,7 +9,7 @@ function Hello() {
       <div className="Hello">
         <img width="200" alt="icon" src={icon} />
       </div>
-      <h1>OtterSg Printer Proxy</h1>
+      <h1>OtterSG Printer Proxy</h1>
     </div>
   );
 }

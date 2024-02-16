@@ -137,16 +137,6 @@ const createWindow = async () => {
       mainWindow.show();
     }
 
-    expressApp.get('/pdf', (_req: any, res: any) => {
-      fs.readFile(
-        path.join(__dirname, '../../assets/label.pdf'),
-        (_err: any, _data: any) => {
-          res.contentType('application/pdf');
-          res.json();
-        },
-      );
-    });
-
     expressApp.get('/printers', (_req: any, res: any) => {
       mainWindow?.webContents.getPrintersAsync().then((printers: any) => {
         return res.json(printers);
@@ -157,11 +147,12 @@ const createWindow = async () => {
       '/print/:printer',
       upload.single('file'),
       async (req: PrintRequest, res: Response) => {
-        const options = req?.body?.options;
+        const options = JSON.parse(req?.body?.options || '[]');
         const { printer } = req.params;
         const fileName = uuidv4();
+        const tempPath = app.getPath('temp');
 
-        const tmpFilePath = `/tmp/otter-files/${fileName}.pdf`;
+        const tmpFilePath = `${tempPath}/${fileName}.pdf`;
 
         fs.writeFileSync(tmpFilePath, req.file.buffer, {
           encoding: 'binary',
@@ -172,6 +163,10 @@ const createWindow = async () => {
           .then(() => {
             // TODO: cleanup file after print succeed
             console.log('print success');
+            fs.unlink(tmpFilePath, (err: unknown) => {
+              if (err) throw err;
+              console.log(`${tmpFilePath} was deleted`);
+            });
           })
           .catch((err) => {
             return res.sendStatus(500).send({ error: 'Something failed!' });
@@ -182,8 +177,10 @@ const createWindow = async () => {
 
     expressApp.listen(PORT, () => {
       // run command if needed
-      execute('cd /tmp && mkdir otter-files');
-      console.log('Listening on 3000');
+      // execute('cd /tmp && mkdir otter-files');
+      // const tempPath = app.getPath('temp');
+      // console.log("🚀 ~ expressApp.listen ~ tempPath:", tempPath)
+      console.log('Listening on 3001');
       // execute('lp /tmp/custom_58x40.pdf');
     });
   });
