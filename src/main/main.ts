@@ -152,7 +152,7 @@ const createWindow = async () => {
         const fileName = uuidv4();
         const tempPath = app.getPath('temp');
 
-        const tmpFilePath = `${tempPath}/${fileName}.pdf`;
+        const tmpFilePath = `${tempPath}${fileName}.pdf`;
 
         fs.writeFileSync(tmpFilePath, req.file.buffer, {
           encoding: 'binary',
