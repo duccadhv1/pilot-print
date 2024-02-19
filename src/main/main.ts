@@ -14,46 +14,13 @@ import {
   app,
   dialog,
   ipcMain,
-  shell,
   nativeImage,
+  shell,
 } from 'electron';
 import path from 'path';
-import { print } from 'unix-print';
-import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
 import MenuBuilder from './menu';
+import initialServer, { shutDown } from './server';
 import { resolveHtmlPath } from './util';
-
-const { exec } = require('child_process');
-
-function execute(command: string, callback?: Function) {
-  exec(command, (error: any, stdout: any) => {
-    if (callback) callback(stdout);
-  });
-}
-
-interface PrintRequest extends Request {
-  file: Buffer;
-}
-
-const os = require('os');
-
-const PORT = 3001;
-const fs = require('fs');
-const express = require('express');
-const cors = require('cors');
-
-const expressApp = express();
-const bodyParser = require('body-parser');
-
-expressApp.use(cors());
-expressApp.use(bodyParser.json());
-
-expressApp.use(bodyParser.json({ extended: true }));
-
-const multer = require('multer');
-
-const upload = multer();
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -64,6 +31,7 @@ if (process.defaultApp) {
 } else {
   app.setAsDefaultProtocolClient('electron-fiddle');
 }
+
 let mainWindow: BrowserWindow | null = null;
 
 ipcMain.on('ipc-example', async (event, arg) => {
@@ -136,56 +104,11 @@ const createWindow = async () => {
     } else {
       mainWindow.show();
     }
-
-    expressApp.get('/printers', (_req: any, res: any) => {
-      mainWindow?.webContents.getPrintersAsync().then((printers: any) => {
-        return res.json(printers);
-      });
-    });
-
-    expressApp.post(
-      '/print/:printer',
-      upload.single('file'),
-      async (req: PrintRequest, res: Response) => {
-        const options = JSON.parse(req?.body?.options || '[]');
-        const { printer } = req.params;
-        const fileName = uuidv4();
-        const tempPath = app.getPath('temp');
-
-        const tmpFilePath = `${tempPath}${fileName}.pdf`;
-
-        fs.writeFileSync(tmpFilePath, req.file.buffer, {
-          encoding: 'binary',
-        });
-
-        // eslint-disable-next-line promise/catch-or-return
-        print(tmpFilePath, printer, options)
-          .then(() => {
-            // TODO: cleanup file after print succeed
-            console.log('print success');
-            fs.unlink(tmpFilePath, (err: unknown) => {
-              if (err) throw err;
-              console.log(`${tmpFilePath} was deleted`);
-            });
-          })
-          .catch((err) => {
-            return res.sendStatus(500).send({ error: 'Something failed!' });
-          });
-        return res.send(200);
-      },
-    );
-
-    expressApp.listen(PORT, () => {
-      // run command if needed
-      // execute('cd /tmp && mkdir otter-files');
-      // const tempPath = app.getPath('temp');
-      // console.log("🚀 ~ expressApp.listen ~ tempPath:", tempPath)
-      console.log('Listening on 3001');
-      // execute('lp /tmp/custom_58x40.pdf');
-    });
+    initialServer(mainWindow);
   });
 
   mainWindow.on('closed', () => {
+    shutDown();
     mainWindow = null;
   });
 
@@ -211,6 +134,7 @@ app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
   if (process.platform !== 'darwin') {
+    shutDown();
     app.quit();
   }
 });
@@ -227,7 +151,12 @@ ipcMain.on('shell:open', () => {
 
 const gotTheLock = app.requestSingleInstanceLock();
 
+app.setLoginItemSettings({
+  openAtLogin: true,
+});
+
 if (!gotTheLock) {
+  shutDown();
   app.quit();
 } else {
   app.on('second-instance', (_event, commandLine, _workingDirectory) => {
