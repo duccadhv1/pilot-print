@@ -1,7 +1,7 @@
 name: Release
 on:
   push:
-    tag: '1*'
+    branches: [master]
 
 jobs:
   publish_on_mac:
@@ -13,10 +13,6 @@ jobs:
           node-version: 16
       - name: install dependencies
         run: npm install
-      - name: Update Version
-        run: sed -i 's/4.6.0/${GITHUB_REF#refs/*/}/g' release/app/package.json
-      - name: view package.json
-        run: cat release/app/package.json
       - name: package
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -31,7 +27,7 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
-      - name: Upload Release Assets
+      - name: Upload Release Windown
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -39,5 +35,23 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: release/build/OtterSGPrintProxy Setup 4.6.0.exe # Adjust the path
           asset_name: OtterSGPrintProxy Setup 4.6.0.exe.zip
+          asset_content_type: application/zip # Adjust content type if needed
+      - name: Upload Release Mac
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: release/build/OtterSGPrintProxy-4.6.0-mac.zip # Adjust the path
+          asset_name: OtterSGPrintProxy-4.6.0-mac.zip
+          asset_content_type: application/zip # Adjust content type if needed
+      - name: Upload Release Linux
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: release/build/OtterSGPrintProxy-1.0.0.AppImage # Adjust the path
+          asset_name: OtterSGPrintProxy-4.6.0.AppImage
           asset_content_type: application/zip # Adjust content type if needed
 
