@@ -22,7 +22,7 @@ jobs:
 
       - name: Update Version
         run: |
-          sed -i 's/4.6.0/${{ env.GIT_TAG }}/g' release/app/package.json
+          sed -i -e 's/1.0.0/${{ env.GIT_TAG }}/g' release/app/package.json
           cat release/app/package.json
 
       - name: package
