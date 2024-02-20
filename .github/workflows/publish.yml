@@ -14,7 +14,7 @@ jobs:
       - name: install dependencies
         run: npm install
       - name: Update Version
-        run: sed -i 's/4.6.0/${{ github.ref }}/g' release/app/package.json
+        run: sed -i 's/4.6.0/${GITHUB_REF#refs/*/}/g' release/app/package.json
       - name: view package.json
         run: cat release/app/package.json
       - name: package
