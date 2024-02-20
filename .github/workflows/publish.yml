@@ -1,8 +1,6 @@
 name: Release
 on:
-  push:
-    tags:
-      - '1*'
+  push: [master]
 
 jobs:
   publish_on_mac:
@@ -14,6 +12,10 @@ jobs:
           node-version: 16
       - name: install dependencies
         run: npm install
+      - name: Update Version
+        run: sed -i 's/4.6.0/${{ github.ref }}/g' release/app/package.json
+      - name: view package.json
+        run: cat release/app/package.json
       - name: package
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
