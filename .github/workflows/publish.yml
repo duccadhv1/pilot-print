@@ -1,22 +1,35 @@
 name: Release
 on:
   push:
-    branches: [master]
+    tag: '1*'
 
 jobs:
   publish_on_mac:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Prepare GITHUB_ENV
+        run: |
+          echo "GIT_TAG=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+          echo "SHORT_SHA=`echo ${GITHUB_SHA} | cut -c1-8`" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@master
         with:
           node-version: 16
+
       - name: install dependencies
         run: npm install
+
+      - name: Update Version
+        run: |
+          sed -i 's/4.6.0/${{ env.GIT_TAG }}/g' release/app/package.json
+          cat release/app/package.json
+
       - name: package
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run package
+
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -54,4 +67,3 @@ jobs:
           asset_path: release/build/OtterSGPrintProxy-1.0.0.AppImage # Adjust the path
           asset_name: OtterSGPrintProxy-1.0.0.AppImage
           asset_content_type: application/zip # Adjust content type if needed
-
