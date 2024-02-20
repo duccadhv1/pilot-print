@@ -33,8 +33,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: release/build/OtterSGPrintProxy Setup 4.6.0.exe # Adjust the path
-          asset_name: OtterSGPrintProxy Setup 4.6.0.exe.zip
+          asset_path: release/build/OtterSGPrintProxy Setup 1.0.0.exe # Adjust the path
+          asset_name: OtterSGPrintProxy Setup 1.0.0.exe.zip
           asset_content_type: application/zip # Adjust content type if needed
       - name: Upload Release Mac
         uses: actions/upload-release-asset@v1
@@ -42,8 +42,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: release/build/OtterSGPrintProxy-4.6.0-mac.zip # Adjust the path
-          asset_name: OtterSGPrintProxy-4.6.0-mac.zip
+          asset_path: release/build/OtterSGPrintProxy-1.0.0-mac.zip # Adjust the path
+          asset_name: OtterSGPrintProxy-1.0.0-mac.zip
           asset_content_type: application/zip # Adjust content type if needed
       - name: Upload Release Linux
         uses: actions/upload-release-asset@v1
@@ -52,6 +52,6 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: release/build/OtterSGPrintProxy-1.0.0.AppImage # Adjust the path
-          asset_name: OtterSGPrintProxy-4.6.0.AppImage
+          asset_name: OtterSGPrintProxy-1.0.0.AppImage
           asset_content_type: application/zip # Adjust content type if needed
 
