@@ -11,14 +11,20 @@
  */
 import { BrowserWindow, app } from 'electron';
 import { Request, Response } from 'express';
-import { print } from 'unix-print';
+import { print, getPrinters } from 'unix-print';
+import { print as windowPrint } from 'pdf-to-printer';
 import { v4 as uuidv4 } from 'uuid';
+import { getPrinters as windowGetPrinters } from 'win32-pdf-printer';
+
+const os = require('os');
+
+const isWindows = os.platform() === 'win32';
 
 interface PrintRequest extends Request {
   file: Buffer;
 }
 
-const PORT = 3001;
+const PORT = 53049;
 const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
@@ -45,11 +51,12 @@ const initialServer = (mainWindow: BrowserWindow | null) => {
   });
 
   expressApp.post(
-    '/print/:printer',
+    '/print',
     upload.single('file'),
     async (req: PrintRequest, res: Response) => {
       const options = JSON.parse(req?.body?.options || '[]');
-      const { printer } = req.params;
+      const printer = req?.body?.printer;
+      // if (!printer) return;
       const fileName = uuidv4();
       const tempPath = app.getPath('temp');
 
@@ -59,28 +66,48 @@ const initialServer = (mainWindow: BrowserWindow | null) => {
         encoding: 'binary',
       });
 
-      // eslint-disable-next-line promise/catch-or-return
-      print(tmpFilePath, printer, options)
-        .then(() => {
-          // TODO: cleanup file after print succeed
-          console.log('print success');
-          fs.unlink(tmpFilePath, (err: unknown) => {
-            if (err) throw err;
-            console.log(`${tmpFilePath} was deleted`);
+      try {
+        if (isWindows) {
+          const winPptions = {
+            printer,
+            paperSize: 'A4',
+          };
+          // eslint-disable-next-line promise/catch-or-return
+          windowPrint(tmpFilePath, winPptions).then(() => {
+            console.log('print success');
           });
-        })
-        .catch((err) => {
-          return res.sendStatus(500).send({ error: 'Something failed!' });
-        });
-      return res.send(200);
+        } else {
+          print(tmpFilePath, printer, options)
+            .then(() => {
+              // TODO: cleanup file after print succeed
+              console.log('print success');
+              fs.unlink(tmpFilePath, (err: unknown) => {
+                if (err) throw err;
+                console.log(`${tmpFilePath} was deleted`);
+              });
+            })
+            .catch((err) => {
+              return res.sendStatus(500).send({ error: 'Something failed!' });
+            });
+        }
+        return res.send(200);
+      } catch (error) {
+        console.log('err', error);
+        return res.sendStatus(500).send({ error: 'Something failed!' });
+      }
     },
   );
+
+  if (isWindows) {
+    const AllPrinterName = windowGetPrinters();
+    console.log('🚀 ~ initialServer ~ AllPrinterName:', AllPrinterName);
+  }
 
   server = expressApp.listen(PORT, () => {
     // run command if needed
     // execute('cd /tmp && mkdir otter-files');
     // const tempPath = app.getPath('temp');
-    console.log('Listening on 3001');
+    console.log(`Listening on ${PORT}`);
     // execute('lp /tmp/custom_58x40.pdf');
   });
 };

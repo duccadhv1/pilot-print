@@ -1,0 +1,43 @@
+name: Release
+on:
+  push:
+    branches: [master]
+
+jobs:
+  publish_on_mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@master
+        with:
+          node-version: 16
+      - name: install dependencies
+        run: npm install
+      - name: Update Version
+        run: sed -i 's/4.6.0/${GITHUB_REF#refs/*/}/g' release/app/package.json
+      - name: view package.json
+        run: cat release/app/package.json
+      - name: package
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run package
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: release/build/OtterSGPrintProxy Setup 4.6.0.exe # Adjust the path
+          asset_name: OtterSGPrintProxy Setup 4.6.0.exe.zip
+          asset_content_type: application/zip # Adjust content type if needed
+
